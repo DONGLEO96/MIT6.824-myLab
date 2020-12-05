@@ -13,7 +13,26 @@ import "strconv"
 // example to show how to declare the arguments
 // and reply for an RPC.
 //
-
+//worker call master for getting a task(map or reduce)
+type GetTaskRequest struct {
+	X int//暂时没用
+}
+type GetTaskResponse struct {
+	MFileName string//map文件名字
+	TaskName string//任务名字
+	RFileName []string//reduce文件名字
+	TaskType int//0:map,1:reduce,2:sleep
+	ReduceNumber int
+}
+//worker send the message about outfile name to master
+type ReportStatusRequest struct {
+	FilesName []string//告诉master，中间文件的名字，reduce用不上
+	TaskName string
+	//FileName string//output file name
+}
+type ReportStatusResponse struct {
+	X int
+}
 type ExampleArgs struct {
 	X int
 }
