@@ -123,7 +123,7 @@ func (rf *Raft) persist() {
 	e.Encode(rf.term)
 	e.Encode(rf.votedfor)
 	e.Encode(rf.log)
-	e.Encode(rf.commitIndex)
+	//e.Encode(rf.commitIndex)
 	data := w.Bytes()
 	rf.persister.SaveRaftState(data)
 }
@@ -143,17 +143,17 @@ func (rf *Raft) readPersist(data []byte) {
 	var xxx int
 	var yyy int
 	var zzz []Log
-	var aaa int
+	//var aaa int
 	if d.Decode(&xxx) != nil ||
-	   d.Decode(&yyy) != nil ||d.Decode(&zzz)!=nil||
-		d.Decode(&aaa)!=nil{
+	   d.Decode(&yyy) != nil ||d.Decode(&zzz)!=nil{//||
+	//	d.Decode(&aaa)!=nil{
 	  log.Fatal("readPersist error")
 	} else {
 		rf.mu.Lock()
 		rf.term = xxx
 	  	rf.votedfor = yyy
 	  	rf.log=zzz
-	  	rf.commitIndex=aaa
+	  	//rf.commitIndex=aaa
 		log.Printf("Peer %d(%d) :read persist data,log len is %d,commit is %d",rf.me,rf.term, len(rf.log),rf.commitIndex)
 		rf.mu.Unlock()
 	}
@@ -592,7 +592,7 @@ func (rf *Raft) BecomeCandidate(){
 		rf.mu.Lock()
 		if rf.state!=candidate{//可能已经重新变回follower了
 			rf.mu.Unlock()
-			return 
+			return
 		}
 		log.Printf("Peer %d(%d,%d) :vote count %d",rf.me,rf.term,rf.state,atomic.LoadInt32(&count))
 
@@ -650,7 +650,12 @@ func (rf *Raft) BackWork(){
 		sort.Ints(mi)
 		if rf.state==leader{
 			midIndex:= len(mi)/2
-			rf.commitIndex=Max(mi[midIndex],rf.commitIndex)
+			if rf.log[mi[midIndex]].Term==rf.term{//不负责为之前任期的leader留下的过半复制log专门进行提交，只能提交自己任期内的log
+				//提交自己任期log时能够自动把之前的都提交了
+				//paper Figure 8
+				rf.commitIndex=Max(mi[midIndex],rf.commitIndex)
+			}
+
 		}
 		rf.persist()
 		for ;rf.lastApplied<=rf.commitIndex;rf.lastApplied++{
@@ -802,16 +807,7 @@ func (rf *Raft) SendAppendEntriesFunc(peer int){
 	}
 
 }
-//func pathExist(path string) (bool,error){
-//	_,err:=os.Stat(path)
-//	if err==nil{
-//		return true,nil
-//	}
-//	if os.IsNotExist(err){
-//		return false,nil
-//	}
-//	return false,nil
-//}
+
 //
 // the service or tester wants to create a Raft server. the ports
 // of all the Raft servers (including this one) are in peers[]. this
